@@ -168,7 +168,7 @@
 
 <script>
     // URL DE TU SCRIPT DE GOOGLE (La cambiaremos en el siguiente paso)
-    const WEB_APP_URL = "AQUÍ_IRÁ_TU_URL_DE_APPS_SCRIPT";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzdfV4SiVyiJo_jcq-O2qaaos4XQq_mAPnf6BPU6h8ITSXE3fQl83FQxXZ7SNl1YRiY/exec";
 
     document.getElementById('formConfig').addEventListener('submit', function(e) {
         e.preventDefault();
