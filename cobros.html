@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consola de Cobranza y Pagos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #0d140f;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: rgba(13, 20, 15, 0.98);
+            max-width: 500px;
+            width: 100%;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 2px #d4af37;
+            box-sizing: border-box;
+        }
+        h2 {
+            text-align: center;
+            color: #f3ca52;
+            font-family: 'Impact', Arial, sans-serif;
+            letter-spacing: 1px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .buscar-bloque {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="number"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background-color: #0a0e0b;
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+        }
+        input:focus {
+            outline: none;
+            border-color: #d4af37;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+        .btn-buscar {
+            padding: 0 20px;
+            background-color: #d4af37;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .tarjeta-info {
+            background-color: #111827;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .tarjeta-info p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .label {
+            color: #94a3b8;
+            font-size: 12px;
+            display: block;
+        }
+        .valor {
+            font-weight: bold;
+            color: #fff;
+        }
+        .badge {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-pagado { background-color: #2ecc71; color: #000; }
+        .badge-pendiente { background-color: #e74c3c; color: #fff; }
+        
+        .acciones-bloque {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-accion {
+            width: 100%;
+            padding: 14px;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        .btn-pagar { background-color: #f3ca52; color: #000; }
+        .btn-desconfirmar { background-color: #e74c3c; color: #fff; }
+        .btn-correo { background-color: #3b82f6; color: #fff; }
+        .btn-wa { background-color: #25d366; color: #fff; }
+        
+        .loader {
+            text-align: center;
+            color: #f3ca52;
+            display: none;
+            font-size: 14px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📋 GESTIÓN DE COBRANZA</h2>
+    
+    <div class="buscar-bloque">
+        <input type="number" id="numBoleta" min="0" max="99" placeholder="Número de boleta (00-99)">
+        <button class="btn-buscar" onclick="consultarBoleta()">Buscar</button>
+    </div>
+
+    <div class="loader" id="loader">Consultando base de datos...</div>
+
+    <div class="tarjeta-info" id="tarjetaInfo">
+        <p><span class="label">Número Seleccionado:</span> <span class="valor" id="txtNumero" style="color:#f3ca52; font-size:18px;">#00</span></p>
+        <p><span class="label">Comprador:</span> <span class="valor" id="txtNombre">---</span></p>
+        <p><span class="label">Contacto:</span> <span class="valor" id="txtContacto">---</span></p>
+        <p><span class="label">Estado actual:</span> <span id="txtEstado"></span></p>
+    </div>
+
+    <div class="acciones-bloque" id="bloqueAcciones">
+        <button id="btnCambiarEstado" class="btn-accion" onclick="procesarCambioEstado()">Manejando Estado...</button>
+        <button id="btnEnviarCorreo" class="btn-accion btn-correo" onclick="ejecutarAccionServidor('enviar_correo_individual')">📩 Enviar Correo de Cobro</button>
+        <a id="btnEnviarWa" target="_blank" class="btn-accion btn-wa">💬 Enviar WhatsApp</a>
+    </div>
+</div>
+
+<script>
+    // URL DE TU SCRIPT DE GOOGLE (Asegúrate de que coincida con tu Web App activa)
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzdfV4SiVyiJo_jcq-O2qaaos4XQq_mAPnf6BPU6h8ITSXE3fQl83FQxXZ7SNl1YRiY/exec";
+    
+    let boletaActual = null;
+    let estadoPagadoActual = false;
+
+    function consultarBoleta() {
+        const num = document.getElementById('numBoleta').value;
+        if(num === "" || num < 0 || num > 99) {
+            alert("Por favor ingresa un número válido entre 0 y 99.");
+            return;
+        }
+        
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('tarjetaInfo').style.display = 'none';
+        document.getElementById('bloqueAcciones').style.display = 'none';
+
+        // Petición GET limpia usando JSONP simulado o parámetros limpios a la API de la Web App
+        fetch(`${WEB_APP_URL}?action=obtenerDetalleBoleta&num=${num}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loader').style.display = 'none';
+            if(data.status === "error" || !data.nombre) {
+                alert(data.message || "Este número no está asignado o se encuentra libre.");
+                return;
+            }
+
+            boletaActual = num;
+            estadoPagadoActual = data.pagado;
+
+            // Rellenar Campos de la interfaz
+            document.getElementById('txtNumero').innerText = "#" + (num < 10 ? "0" + num : num);
+            document.getElementById('txtNombre').innerText = data.nombre;
+            document.getElementById('txtContacto').innerText = `${data.telefono} | ${data.correo}`;
+            
+            const badge = document.getElementById('txtEstado');
+            const btnEstado = document.getElementById('btnCambiarEstado');
+            
+            if(data.pagado) {
+                badge.innerHTML = '<span class="badge badge-pagado">PAGADO</span>';
+                btnEstado.innerHTML = '❌ Desconfirmar Pago';
+                btnEstado.className = 'btn-accion btn-desconfirmar';
+                document.getElementById('btnEnviarCorreo').style.display = 'none';
+                document.getElementById('btnEnviarWa').style.display = 'none';
+            } else {
+                badge.innerHTML = '<span class="badge badge-pendiente">PENDIENTE</span>';
+                btnEstado.innerHTML = '💵 Confirmar Pago';
+                btnEstado.className = 'btn-accion btn-pagar';
+                document.getElementById('btnEnviarCorreo').style.display = 'flex';
+                document.getElementById('btnEnviarWa').style.display = 'flex';
+                
+                // Configurar enlace directo a la API de WhatsApp
+                document.getElementById('btnEnviarWa').href = `https://api.whatsapp.com/send?phone=${data.telLim}&text=${encodeURIComponent(data.mensajeWa)}`;
+            }
+
+            document.getElementById('tarjetaInfo').style.display = 'block';
+            document.getElementById('bloqueAcciones').style.display = 'flex';
+        })
+        .catch(err => {
+            document.getElementById('loader').style.display = 'none';
+            alert("Error al conectar con la base de datos de Google Sheets.");
+        });
+    }
+
+    function procesarCambioEstado() {
+        const accion = estadoPagadoActual ? "desconfirmar" : "confirmar";
+        ejecutarAccionServidor(accion);
+    }
+
+    function ejecutarAccionServidor(accionParam) {
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('bloqueAcciones').style.display = 'none';
+
+        fetch(`${WEB_APP_URL}?num=${boletaActual}&accion=${accionParam}&source=github`)
+        .then(() => {
+            alert("Operación ejecutada con éxito en el servidor.");
+            consultarBoleta(); // Recarga los datos actualizados
+        })
+        .catch(() => {
+            alert("La operación se procesó.");
+            consultarBoleta();
+        });
+    }
+</script>
+
+</body>
+</html>
