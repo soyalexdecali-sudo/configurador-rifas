@@ -62,112 +62,120 @@
             box-sizing: border-box;
             font-size: 14px;
         }
-        input:focus, textarea:focus, select:focus {
-            outline: none;
-            border-color: #d4af37;
-            box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: none;
+            cursor: pointer;
+            box-sizing: border-box;
+            padding: 2px;
+        }
+        .color-grupo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
         textarea {
             resize: vertical;
-            height: 65px;
-            font-family: Arial, sans-serif;
-        }
-        .grid-3 {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            height: 60px;
         }
         button {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(135px, #f3ca52 0%, #b8860b 100%);
+            background-color: #d4af37;
             color: #000;
             border: none;
-            border-radius: 6px;
+            padding: 14px;
             font-size: 16px;
             font-weight: bold;
+            border-radius: 6px;
             cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.15s ease-in-out;
-            margin-top: 10px;
+            transition: background 0.3s, transform 0.1s;
         }
         button:hover {
-            background: linear-gradient(135px, #ffe699 0%, #d4af37 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(214, 175, 55, 0.2);
+            background-color: #f3ca52;
         }
         button:active {
-            transform: translateY(1px);
+            transform: scale(0.98);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚙️ CONFIGURACIÓN DE LA RIFA</h2>
-    
+    <h2>Configuración General de la Rifa</h2>
     <form id="formConfig">
+        
         <div class="seccion">
-            <div class="seccion-titulo">Identidad de la Rifa</div>
+            <div class="seccion-titulo">Identidad del Sorteo</div>
             <div class="campo">
-                <label>Título de la Rifa:</label>
-                <input type="text" id="tituloRifa" required placeholder="Ej: GRAN RIFA EMBAJADORES">
+                <label>Título de la Rifa</label>
+                <input type="text" id="tituloRifa" required placeholder="Ej: GRAN RIFA PRO-FONDOS">
             </div>
             <div class="campo">
-                <label>Descripción de la Rifa:</label>
-                <textarea id="descripcionRifa" required placeholder="Ej: Juega con las últimas dos cifras de la Lotería de Boyacá..."></textarea>
+                <label>Descripción Corta / Instrucciones</label>
+                <textarea id="descripcionRifa" required placeholder="Ej: SEPARA TU NÚMERO Y APOYA NUESTRA CAUSA"></textarea>
             </div>
         </div>
 
         <div class="seccion">
-            <div class="seccion-titulo">Logística y Valores</div>
+            <div class="seccion-titulo">Parámetros del Sorteo</div>
             <div class="campo">
-                <label>Nombre del Encargado:</label>
-                <input type="text" id="encargado" required placeholder="Nombre completo">
+                <label>Organizador / Encargado</label>
+                <input type="text" id="encargado" required>
             </div>
             <div class="campo">
-                <label>WhatsApp del Encargado:</label>
-                <input type="text" id="whatsapp" required placeholder="Ej: 573001234567">
-            </div>
-            <div class="campo">
-                <label>Fecha de Sorteo:</label>
+                <label>Fecha del Sorteo</label>
                 <input type="date" id="fechaSorteo" required>
             </div>
             <div class="campo">
-                <label>Valor del Número:</label>
-                <input type="number" id="valorRifa" required placeholder="Ej: 25000">
+                <label>Valor del Boleto ($)</label>
+                <input type="number" id="valorRifa" required>
             </div>
             <div class="campo">
-                <label>Medio de Pago:</label>
-                <input type="text" id="medioPago" required placeholder="Ej: Nequi / Daviplata: 3123456789">
+                <label>Medio de Pago Principal</label>
+                <input type="text" id="medioPago" required placeholder="Ej: Nequi 3123456789">
+            </div>
+            <div class="campo">
+                <label>WhatsApp de Contacto Oficial</label>
+                <input type="text" id="whatsapp" required placeholder="Ej: +57 312 345 6789">
             </div>
         </div>
 
         <div class="seccion">
-            <div class="seccion-titulo">Reglas y Alertas Automáticas</div>
+            <div class="seccion-titulo">Reglas de Automatización</div>
             <div class="campo">
-                <label>¿Admite una sola participación por usuario?:</label>
+                <label>¿Permitir una única participación por persona?</label>
                 <select id="unicaParticipacion">
-                    <option value="NO">NO (Permitir múltiples compras)</option>
-                    <option value="SI">SÍ (Restringir por teléfono/correo)</option>
+                    <option value="NO">NO (Un usuario puede comprar varios números)</option>
+                    <option value="SI">SI (Restringir a 1 boleta por Nombre/Teléfono)</option>
                 </select>
             </div>
             <div class="campo">
-                <label>Días previos a fecha límite para enviar recordatorios automáticos:</label>
-                <div class="grid-3">
-                    <div>
-                        <label style="font-size:11px; text-align:center; display:block; margin-bottom:3px;">Alerta 1</label>
-                        <input type="number" id="alerta1" min="1" max="30" required placeholder="Ej: 5" value="5">
-                    </div>
-                    <div>
-                        <label style="font-size:11px; text-align:center; display:block; margin-bottom:3px;">Alerta 2</label>
-                        <input type="number" id="alerta2" min="1" max="30" required placeholder="Ej: 3" value="3">
-                    </div>
-                    <div>
-                        <label style="font-size:11px; text-align:center; display:block; margin-bottom:3px;">Alerta 3</label>
-                        <input type="number" id="alerta3" min="1" max="30" required placeholder="Ej: 1" value="1">
-                    </div>
+                <label>Días previos Alerta 1</label>
+                <input type="number" id="alerta1" value="0">
+            </div>
+            <div class="campo">
+                <label>Días previos Alerta 2</label>
+                <input type="number" id="alerta2" value="0">
+            </div>
+            <div class="campo">
+                <label>Días previos Alerta 3</label>
+                <input type="number" id="alerta3" value="0">
+            </div>
+        </div>
+
+        <div class="seccion">
+            <div class="seccion-titulo">Estilos de la Interfaz (GitHub)</div>
+            <div class="color-grupo">
+                <div class="campo">
+                    <label>Fondo del Tablero</label>
+                    <input type="color" id="fondoFormulario" value="#0d140f">
+                </div>
+                <div class="campo">
+                    <label>Color de Textos</label>
+                    <input type="color" id="colorFuentes" value="#ffffff">
                 </div>
             </div>
         </div>
@@ -177,15 +185,39 @@
 </div>
 
 <script>
-    // URL DE TU SCRIPT DE GOOGLE (Reemplaza este enlace de ejemplo con tu URL de Apps Script real)
+    // URL DE TU WEB APP DE GOOGLE
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzdfV4SiVyiJo_jcq-O2qaaos4XQq_mAPnf6BPU6h8ITSXE3fQl83FQxXZ7SNl1YRiY/exec";
+
+    // Cargar la configuración actual al iniciar el panel configurador externo
+    window.addEventListener('DOMContentLoaded', () => {
+        fetch(`${WEB_APP_URL}?accion=obtener_config`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) return;
+            document.getElementById('tituloRifa').value = data.titulo || '';
+            document.getElementById('descripcionRifa').value = data.descripcion || '';
+            document.getElementById('encargado').value = data.encargado || '';
+            document.getElementById('fechaSorteo').value = data.fecha || '';
+            document.getElementById('valorRifa').value = data.valor || '';
+            document.getElementById('medioPago').value = data.medio || '';
+            document.getElementById('whatsapp').value = data.whatsapp || '';
+            document.getElementById('unicaParticipacion').value = data.unico || 'NO';
+            document.getElementById('alerta1').value = data.u2 || 0;
+            document.getElementById('alerta2').value = data.w2 || 0;
+            document.getElementById('alerta3').value = data.y2 || 0;
+            
+            // Cargar los colores salvados mapeados desde la hoja
+            document.getElementById('fondoFormulario').value = data.fondoFormulario || '#0d140f';
+            document.getElementById('colorFuentes').value = data.colorFuentes || '#ffffff';
+        })
+        .catch(err => console.error("Error cargando configuración inicial:", err));
+    });
 
     document.getElementById('formConfig').addEventListener('submit', function(e) {
         e.preventDefault();
-        
         const btn = document.getElementById('btnGuardar');
         const textoOriginal = btn.innerText;
-        btn.innerText = "Enviando datos...";
+        btn.innerText = 'Guardando cambios...';
         btn.disabled = true;
 
         const datos = {
@@ -200,7 +232,9 @@
             alerta3: document.getElementById('alerta3').value,
             unicaParticipacion: document.getElementById('unicaParticipacion').value,
             tituloRifa: document.getElementById('tituloRifa').value,
-            descripcionRifa: document.getElementById('descripcionRifa').value
+            descripcionRifa: document.getElementById('descripcionRifa').value,
+            fondoFormulario: document.getElementById('fondoFormulario').value,
+            colorFuentes: document.getElementById('colorFuentes').value
         };
 
         fetch(WEB_APP_URL, {
