@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen de Rifa y Control de Pagos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d140f;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #0f172a;
+            max-width: 780px;
+            width: 100%;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 0 2px #d4af37;
+            box-sizing: border-box;
+        }
+        h2 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 20px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        h2 span { color: #f3ca52; }
+
+        /* -------- Bloque de clave de acceso -------- */
+        .bloque-clave {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .bloque-clave input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background-color: #0a0e0b;
+            color: #fff;
+            font-size: 15px;
+        }
+        .bloque-clave input:focus {
+            outline: none;
+            border-color: #d4af37;
+        }
+        .btn-dorado {
+            padding: 0 22px;
+            background-color: #d4af37;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .btn-dorado:hover { background-color: #f3ca52; }
+
+        /* -------- Contadores -------- */
+        .contadores {
+            display: none;
+            gap: 12px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .contador {
+            flex: 1;
+            min-width: 120px;
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+        .contador .cifra { font-size: 22px; font-weight: bold; }
+        .contador .rotulo { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .cifra-vendidos { color: #f3ca52; }
+        .cifra-pagados { color: #10b981; }
+        .cifra-pendientes { color: #ef4444; }
+
+        /* -------- Tabla -------- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            display: none;
+        }
+        th {
+            border-bottom: 2px solid #1e293b;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            border-bottom: 1px solid #1e293b;
+            padding: 14px 8px;
+            vertical-align: middle;
+        }
+        .col-num { color: #facc15; font-weight: bold; font-size: 14px; white-space: nowrap; }
+        .nombre-comprador { font-weight: 500; font-size: 15px; color: #ffffff; margin: 0 0 4px 0; }
+        .sub-contacto { font-size: 12px; color: #64748b; word-break: break-all; }
+        .sub-contacto a { color: #3b82f6; }
+
+        .badge {
+            font-weight: bold;
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+        .badge-pagado { background-color: #10b981; color: #000; }
+        .badge-pendiente { background-color: #ef4444; color: #fff; }
+
+        .btn-fila {
+            display: block;
+            width: 140px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 11px;
+            padding: 8px 0;
+            margin: 0 auto 6px auto;
+            border-radius: 6px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            font-family: inherit;
+        }
+        .btn-confirmar { background-color: #facc15; color: #000; }
+        .btn-correo { background-color: #3b82f6; color: #fff; }
+        .btn-wa { background-color: #22c55e; color: #fff; }
+        .btn-desconfirmar { background-color: #ef4444; color: #fff; }
+        .btn-fila:disabled { opacity: 0.5; cursor: wait; }
+
+        .centrado { text-align: center; }
+
+        #estadoCarga {
+            text-align: center;
+            color: #f3ca52;
+            font-size: 14px;
+            margin: 20px 0;
+            display: none;
+        }
+        #msgError {
+            text-align: center;
+            color: #ef4444;
+            font-size: 14px;
+            margin: 15px 0;
+            display: none;
+        }
+        .barra-superior {
+            display: none;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        .btn-refrescar {
+            background: #111827;
+            color: #f3ca52;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        .btn-refrescar:hover { border-color: #d4af37; }
+
+        @media(max-width: 640px) {
+            body { padding: 10px; }
+            .container { padding: 15px; }
+            th:nth-child(3), td:nth-child(3) { display: none; } /* Oculta columna Estado; el color de los botones ya lo indica */
+            .btn-fila { width: 110px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📊 <span>RESUMEN</span> de la Rifa y Control de Pagos</h2>
+
+    <!-- Acceso con clave (definida en MENU!B30 de la hoja de cálculo) -->
+    <div class="bloque-clave" id="bloqueClave">
+        <input type="password" id="inputClave" placeholder="Clave de acceso del administrador" onkeydown="if(event.key==='Enter'){event.preventDefault();ingresar();}">
+        <button class="btn-dorado" onclick="ingresar()">Ingresar</button>
+    </div>
+
+    <div id="msgError"></div>
+    <div id="estadoCarga">Consultando base de datos de Google Sheets...</div>
+
+    <div class="contadores" id="contadores">
+        <div class="contador"><div class="cifra cifra-vendidos" id="cifraVendidos">0</div><div class="rotulo">Vendidos</div></div>
+        <div class="contador"><div class="cifra cifra-pagados" id="cifraPagados">0</div><div class="rotulo">Pagados</div></div>
+        <div class="contador"><div class="cifra cifra-pendientes" id="cifraPendientes">0</div><div class="rotulo">Pendientes</div></div>
+    </div>
+
+    <table id="tablaResumen">
+        <thead>
+            <tr>
+                <th style="width:10%;">N°</th>
+                <th style="width:45%;">Comprador</th>
+                <th style="width:20%;" class="centrado">Estado</th>
+                <th style="width:25%;" class="centrado">Gestión / Cobros</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+    </table>
+
+    <div class="barra-superior" id="barraSuperior">
+        <button class="btn-refrescar" onclick="cargarResumen()">↻ Actualizar Datos</button>
+    </div>
+</div>
+
+<script>
+    // URL DE TU SCRIPT DE GOOGLE (la misma Web App de los otros formularios)
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzdfV4SiVyiJo_jcq-O2qaaos4XQq_mAPnf6BPU6h8ITSXE3fQl83FQxXZ7SNl1YRiY/exec";
+
+    let claveActual = sessionStorage.getItem("clave_resumen_rifa") || "";
+
+    window.addEventListener("DOMContentLoaded", () => {
+        // Si ya ingresó la clave en esta sesión (o no hay clave configurada), carga directo
+        cargarResumen();
+    });
+
+    function ingresar() {
+        claveActual = document.getElementById("inputClave").value.trim();
+        cargarResumen();
+    }
+
+    function mostrarError(msg) {
+        const el = document.getElementById("msgError");
+        el.innerText = msg;
+        el.style.display = "block";
+    }
+
+    function cargarResumen() {
+        document.getElementById("msgError").style.display = "none";
+        document.getElementById("estadoCarga").style.display = "block";
+
+        fetch(`${WEB_APP_URL}?accion=obtener_resumen&clave=${encodeURIComponent(claveActual)}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("estadoCarga").style.display = "none";
+
+            if (data.status === "clave_invalida") {
+                document.getElementById("bloqueClave").style.display = "flex";
+                if (claveActual !== "") mostrarError("Clave incorrecta. Verifica la clave definida en la celda B30 de la pestaña MENU.");
+                sessionStorage.removeItem("clave_resumen_rifa");
+                return;
+            }
+            if (data.status !== "ok") {
+                mostrarError(data.message || "No fue posible obtener el resumen.");
+                return;
+            }
+
+            // Acceso concedido: recordar clave durante esta sesión del navegador
+            sessionStorage.setItem("clave_resumen_rifa", claveActual);
+            document.getElementById("bloqueClave").style.display = "none";
+
+            document.getElementById("cifraVendidos").innerText = data.vendidos;
+            document.getElementById("cifraPagados").innerText = data.pagados;
+            document.getElementById("cifraPendientes").innerText = data.pendientes;
+            document.getElementById("contadores").style.display = "flex";
+            document.getElementById("barraSuperior").style.display = "flex";
+
+            pintarTabla(data.lista || []);
+        })
+        .catch(err => {
+            document.getElementById("estadoCarga").style.display = "none";
+            mostrarError("Error de conexión con la base de datos de Google Sheets.");
+            console.error(err);
+        });
+    }
+
+    function pintarTabla(lista) {
+        const cuerpo = document.getElementById("cuerpoTabla");
+        cuerpo.innerHTML = "";
+
+        if (lista.length === 0) {
+            cuerpo.innerHTML = "<tr><td colspan='4' class='centrado' style='color:#64748b;'>Aún no hay números reservados en esta rifa.</td></tr>";
+        }
+
+        lista.forEach(item => {
+            const numFmt = String(item.numero).padStart(2, "0");
+            const fila = document.createElement("tr");
+
+            const contacto = `${item.telefono || ""}${item.correo ? " | <a href='mailto:" + item.correo + "'>" + item.correo + "</a>" : ""}`;
+
+            let acciones = "";
+            if (item.pagado) {
+                acciones = `<button class="btn-fila btn-desconfirmar" onclick="ejecutarAccion(this, ${item.numero}, 'desconfirmar')">❌ Desconfirmar</button>`;
+            } else {
+                const linkWa = `https://api.whatsapp.com/send?phone=${item.telLim}&text=${encodeURIComponent(item.mensajeWa)}`;
+                acciones = `<button class="btn-fila btn-confirmar" onclick="ejecutarAccion(this, ${item.numero}, 'confirmar')">💵 Confirmar</button>` +
+                           `<button class="btn-fila btn-correo" onclick="ejecutarAccion(this, ${item.numero}, 'enviar_correo_individual')">📩 Correo</button>` +
+                           `<a class="btn-fila btn-wa" href="${linkWa}" target="_blank" rel="noopener">💬 WhatsApp</a>`;
+            }
+
+            fila.innerHTML =
+                `<td class="col-num">#${numFmt}</td>` +
+                `<td><div class="nombre-comprador"></div><div class="sub-contacto">${contacto}</div></td>` +
+                `<td class="centrado"><span class="badge ${item.pagado ? "badge-pagado" : "badge-pendiente"}">${item.pagado ? "PAGADO" : "PENDIENTE"}</span></td>` +
+                `<td class="centrado">${acciones}</td>`;
+
+            // El nombre se inserta como texto plano (evita problemas con caracteres especiales)
+            fila.querySelector(".nombre-comprador").innerText = item.nombre;
+            cuerpo.appendChild(fila);
+        });
+
+        document.getElementById("tablaResumen").style.display = "table";
+    }
+
+    // Ejecuta Confirmar / Desconfirmar / Enviar Correo contra el servidor
+    function ejecutarAccion(boton, numero, accion) {
+        boton.disabled = true;
+        boton.innerText = "Procesando...";
+
+        fetch(`${WEB_APP_URL}?num=${numero}&accion=${accion}&formato=json&clave=${encodeURIComponent(claveActual)}`)
+        .then(res => res.json())
+        .then(r => {
+            if (r.status === "ok") {
+                if (accion === "enviar_correo_individual") alert(r.message || "Correo de cobro enviado.");
+            } else {
+                alert(r.message || "No fue posible completar la operación.");
+            }
+            cargarResumen();
+        })
+        .catch(() => {
+            // Con Apps Script la operación suele ejecutarse aunque la respuesta falle por CORS
+            cargarResumen();
+        });
+    }
+</script>
+
+</body>
+</html>
