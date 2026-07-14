@@ -72,10 +72,35 @@
             box-sizing: border-box;
             padding: 2px;
         }
+        input[type="color"]:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
         .color-grupo {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+        }
+        .check-defecto {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0a0e0b;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+        .check-defecto input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #d4af37;
+            cursor: pointer;
+        }
+        .check-defecto span {
+            font-size: 13px;
+            color: #cdcdcd;
         }
         textarea {
             resize: vertical;
@@ -166,16 +191,42 @@
             </div>
         </div>
 
+        <!-- ================================================================
+             COLORES DEL TABLERO PÚBLICO (se guardan en MENU!B24:B29)
+             Marca la casilla para usar los colores de fábrica del tablero.
+             ================================================================ -->
         <div class="seccion">
-            <div class="seccion-titulo">Estilos de la Interfaz (GitHub)</div>
+            <div class="seccion-titulo">Colores del Tablero Público</div>
+
+            <label class="check-defecto" for="coloresDefecto">
+                <input type="checkbox" id="coloresDefecto" checked>
+                <span>Usar los colores por defecto del tablero (recomendado)</span>
+            </label>
+
             <div class="color-grupo">
                 <div class="campo">
-                    <label>Fondo del Tablero</label>
-                    <input type="color" id="fondoFormulario" value="#0d140f">
+                    <label>Fondo del Tablero (B24)</label>
+                    <input type="color" id="colFondo" value="#0d140f" disabled>
                 </div>
                 <div class="campo">
-                    <label>Color de Textos</label>
-                    <input type="color" id="colorFuentes" value="#ffffff">
+                    <label>Fuente Descripción (B25)</label>
+                    <input type="color" id="colFuenteDescripcion" value="#a3b899" disabled>
+                </div>
+                <div class="campo">
+                    <label>Fuente Título (B26)</label>
+                    <input type="color" id="colFuenteTitulo" value="#f3ca52" disabled>
+                </div>
+                <div class="campo">
+                    <label>Fuente Números Libres (B27)</label>
+                    <input type="color" id="colFuenteNumeros" value="#38bdf8" disabled>
+                </div>
+                <div class="campo">
+                    <label>Fuente Números Tapados (B28)</label>
+                    <input type="color" id="colFuenteNumerosTapados" value="#ffffff" disabled>
+                </div>
+                <div class="campo">
+                    <label>Casilla que Tapa Números (B29)</label>
+                    <input type="color" id="colCasillaTapa" value="#b91c1c" disabled>
                 </div>
             </div>
         </div>
@@ -188,7 +239,15 @@
     // URL DE TU WEB APP DE GOOGLE
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzdfV4SiVyiJo_jcq-O2qaaos4XQq_mAPnf6BPU6h8ITSXE3fQl83FQxXZ7SNl1YRiY/exec";
 
-    // Cargar la configuración actual al iniciar el panel configurador externo
+    const IDS_COLORES = ["colFondo", "colFuenteDescripcion", "colFuenteTitulo", "colFuenteNumeros", "colFuenteNumerosTapados", "colCasillaTapa"];
+
+    // Habilita o deshabilita los selectores de color según la casilla "por defecto"
+    document.getElementById('coloresDefecto').addEventListener('change', function() {
+        const usarDefecto = this.checked;
+        IDS_COLORES.forEach(id => document.getElementById(id).disabled = usarDefecto);
+    });
+
+    // Cargar la configuración actual al iniciar el panel
     window.addEventListener('DOMContentLoaded', () => {
         fetch(`${WEB_APP_URL}?accion=obtener_config`)
         .then(res => res.json())
@@ -205,10 +264,22 @@
             document.getElementById('alerta1').value = data.u2 || 0;
             document.getElementById('alerta2').value = data.w2 || 0;
             document.getElementById('alerta3').value = data.y2 || 0;
-            
-            // Cargar los colores salvados mapeados desde la hoja
-            document.getElementById('fondoFormulario').value = data.fondoFormulario || '#0d140f';
-            document.getElementById('colorFuentes').value = data.colorFuentes || '#ffffff';
+
+            // Colores guardados en MENU!B24:B29.
+            // El servidor devuelve "" para cada color en DEFECTO.
+            const c = data.colores || {};
+            const hayPersonalizados = !!(c.fondo || c.fuenteDescripcion || c.fuenteTitulo || c.fuenteNumeros || c.fuenteNumerosTapados || c.casillaTapa);
+
+            if (hayPersonalizados) {
+                document.getElementById('coloresDefecto').checked = false;
+                IDS_COLORES.forEach(id => document.getElementById(id).disabled = false);
+                if (c.fondo) document.getElementById('colFondo').value = c.fondo;
+                if (c.fuenteDescripcion) document.getElementById('colFuenteDescripcion').value = c.fuenteDescripcion;
+                if (c.fuenteTitulo) document.getElementById('colFuenteTitulo').value = c.fuenteTitulo;
+                if (c.fuenteNumeros) document.getElementById('colFuenteNumeros').value = c.fuenteNumeros;
+                if (c.fuenteNumerosTapados) document.getElementById('colFuenteNumerosTapados').value = c.fuenteNumerosTapados;
+                if (c.casillaTapa) document.getElementById('colCasillaTapa').value = c.casillaTapa;
+            }
         })
         .catch(err => console.error("Error cargando configuración inicial:", err));
     });
@@ -219,6 +290,17 @@
         const textoOriginal = btn.innerText;
         btn.innerText = 'Guardando cambios...';
         btn.disabled = true;
+
+        // Colores: por defecto (DEFECTO en la hoja) o valores personalizados
+        const usarDefecto = document.getElementById('coloresDefecto').checked;
+        const colores = usarDefecto ? { defecto: true } : {
+            fondo: document.getElementById('colFondo').value,
+            fuenteDescripcion: document.getElementById('colFuenteDescripcion').value,
+            fuenteTitulo: document.getElementById('colFuenteTitulo').value,
+            fuenteNumeros: document.getElementById('colFuenteNumeros').value,
+            fuenteNumerosTapados: document.getElementById('colFuenteNumerosTapados').value,
+            casillaTapa: document.getElementById('colCasillaTapa').value
+        };
 
         const datos = {
             action: "actualizarConfiguracion",
@@ -233,8 +315,7 @@
             unicaParticipacion: document.getElementById('unicaParticipacion').value,
             tituloRifa: document.getElementById('tituloRifa').value,
             descripcionRifa: document.getElementById('descripcionRifa').value,
-            fondoFormulario: document.getElementById('fondoFormulario').value,
-            colorFuentes: document.getElementById('colorFuentes').value
+            colores: colores
         };
 
         fetch(WEB_APP_URL, {
