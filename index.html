@@ -124,6 +124,84 @@
         button:active {
             transform: scale(0.98);
         }
+
+        /* ================= ZONA DE RIESGO: RESET RIFA ================= */
+        .zona-riesgo {
+            margin-top: 25px;
+            border: 1px solid #7f1d1d;
+            border-radius: 8px;
+            padding: 15px;
+            background: rgba(127, 29, 29, 0.12);
+        }
+        .zona-riesgo .seccion-titulo { color: #ef4444; margin-bottom: 8px; }
+        .zona-riesgo p {
+            font-size: 12px;
+            color: #cdcdcd;
+            margin: 0 0 12px 0;
+            line-height: 1.5;
+        }
+        .btn-reset {
+            background-color: #b91c1c;
+            color: #fff;
+        }
+        .btn-reset:hover { background-color: #ef4444; }
+
+        /* Modal de confirmación del reset */
+        #modalReset {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .modal-caja {
+            background: #0d140f;
+            border: 2px solid #ef4444;
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 440px;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+        }
+        .modal-caja h3 {
+            color: #ef4444;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .modal-caja p {
+            font-size: 13px;
+            color: #cdcdcd;
+            line-height: 1.6;
+            margin: 0 0 15px 0;
+        }
+        .modal-caja ul {
+            font-size: 13px;
+            color: #cdcdcd;
+            margin: 0 0 15px 0;
+            padding-left: 20px;
+            line-height: 1.7;
+        }
+        .modal-botones {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .modal-botones button { margin: 0; }
+        .btn-cancelar {
+            background: #334155;
+            color: #fff;
+        }
+        .btn-cancelar:hover { background: #475569; }
+        #btnConfirmarReset:disabled {
+            background: #5a5a5a;
+            color: #999;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -233,6 +311,42 @@
 
         <button type="submit" id="btnGuardar">Guardar Configuración</button>
     </form>
+
+    <!-- ================================================================
+         ZONA DE RIESGO: REINICIO TOTAL DE LA RIFA
+         Requiere la clave de administrador definida en MENU!B30 y
+         escribir la palabra RESET como doble confirmación.
+         ================================================================ -->
+    <div class="zona-riesgo">
+        <div class="seccion-titulo">⚠️ Zona de Riesgo</div>
+        <p>Reiniciar la rifa borra <b>todos los compradores</b> (nombres, teléfonos, correos y estados de pago) y devuelve la configuración a su estado inicial. Esta acción <b>no se puede deshacer</b>.</p>
+        <button type="button" class="btn-reset" onclick="abrirModalReset()">🗑️ Reset Rifa</button>
+    </div>
+</div>
+
+<!-- Modal de confirmación del reset -->
+<div id="modalReset">
+    <div class="modal-caja">
+        <h3>⚠️ ¿Reiniciar la rifa por completo?</h3>
+        <p>Estás a punto de ejecutar una acción <b>irreversible</b> que hará lo siguiente:</p>
+        <ul>
+            <li>Borrar <b>todos los compradores</b>: nombres, teléfonos, correos y pagos confirmados.</li>
+            <li>Limpiar la configuración: encargado, fecha, valor, medio de pago y alertas.</li>
+            <li>Restablecer el título, la descripción y los colores del tablero.</li>
+        </ul>
+        <div class="campo">
+            <label>Para continuar, escribe la palabra <b style="color:#ef4444;">RESET</b>:</label>
+            <input type="text" id="palabraReset" autocomplete="off" placeholder="Escribe RESET" oninput="validarPalabraReset()">
+        </div>
+        <div class="campo">
+            <label>Clave de administrador (celda B30 de la pestaña MENU):</label>
+            <input type="password" id="claveReset" autocomplete="off" placeholder="Clave de administrador">
+        </div>
+        <div class="modal-botones">
+            <button type="button" class="btn-cancelar" onclick="cerrarModalReset()">Cancelar</button>
+            <button type="button" class="btn-reset" id="btnConfirmarReset" disabled onclick="ejecutarResetRifa()">Sí, borrar todo</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -338,6 +452,58 @@
             btn.disabled = false;
         });
     });
+
+    // ====================================================================
+    // RESET RIFA — doble validación (palabra RESET + clave de MENU!B30)
+    // ====================================================================
+    function abrirModalReset() {
+        document.getElementById('palabraReset').value = '';
+        document.getElementById('claveReset').value = '';
+        document.getElementById('btnConfirmarReset').disabled = true;
+        document.getElementById('modalReset').style.display = 'flex';
+    }
+
+    function cerrarModalReset() {
+        document.getElementById('modalReset').style.display = 'none';
+    }
+
+    // El botón rojo solo se habilita cuando se escribe exactamente RESET
+    function validarPalabraReset() {
+        const palabra = document.getElementById('palabraReset').value.trim().toUpperCase();
+        document.getElementById('btnConfirmarReset').disabled = (palabra !== 'RESET');
+    }
+
+    function ejecutarResetRifa() {
+        const clave = document.getElementById('claveReset').value.trim();
+        if (clave === '') {
+            alert('Debes ingresar la clave de administrador (celda B30 de la pestaña MENU).');
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmarReset');
+        btn.disabled = true;
+        btn.innerText = 'Reiniciando...';
+
+        fetch(`${WEB_APP_URL}?accion=reset_rifa&clave=${encodeURIComponent(clave)}&formato=json`)
+        .then(res => res.json())
+        .then(r => {
+            btn.innerText = 'Sí, borrar todo';
+            if (r.status === 'ok') {
+                cerrarModalReset();
+                alert('✅ ' + (r.message || 'Rifa reiniciada correctamente.'));
+                location.reload(); // Recarga el formulario para mostrar la configuración limpia
+            } else {
+                btn.disabled = false;
+                alert('❌ ' + (r.message || 'No fue posible reiniciar la rifa.'));
+            }
+        })
+        .catch(err => {
+            btn.innerText = 'Sí, borrar todo';
+            btn.disabled = false;
+            console.error(err);
+            alert('Error de conexión con el servidor. El reinicio podría NO haberse ejecutado; verifica la hoja de cálculo antes de reintentar.');
+        });
+    }
 </script>
 
 </body>
