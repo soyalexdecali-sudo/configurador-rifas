@@ -52,7 +52,8 @@
             color: #cdcdcd;
             margin-bottom: 5px;
         }
-        input[type="text"], input[type="number"], input[type="date"], textarea, select {
+        input[type="text"], input[type="number"], input[type="date"],
+        input[type="datetime-local"], textarea, select {
             width: 100%;
             padding: 11px;
             border-radius: 6px;
@@ -62,6 +63,29 @@
             box-sizing: border-box;
             font-size: 14px;
         }
+        input[type="datetime-local"] {
+            color-scheme: dark;
+        }
+        /* Nota descriptiva debajo de un campo */
+        .campo-nota {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+        /* Pill de estado del cierre */
+        .pill-cierre {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .pill-abierto  { background: #10b981; color: #000; }
+        .pill-cerrado  { background: #ef4444; color: #fff; }
+        .pill-inactivo { background: #334155; color: #94a3b8; }
         input[type="color"] {
             width: 100%;
             height: 40px;
@@ -244,6 +268,22 @@
                 <label>WhatsApp de Contacto Oficial</label>
                 <input type="text" id="whatsapp" required placeholder="Ej: +57 312 345 6789">
             </div>
+
+            <!-- ============================================================
+                 CIERRE DE SELECCIÓN DE NÚMEROS
+                 Celda MENU!B31 — si está vacía la selección queda abierta.
+                 ============================================================ -->
+            <div class="campo">
+                <label>
+                    🔒 Fecha y hora de cierre de selección de números
+                    <span class="pill-cierre pill-inactivo" id="pillCierre">Sin cierre</span>
+                </label>
+                <input type="datetime-local" id="cierreSeleccion">
+                <p class="campo-nota">
+                    Cuando llegue esta fecha y hora, el tablero rechazará nuevas selecciones automáticamente.
+                    Deja el campo vacío para mantener la selección abierta indefinidamente.
+                </p>
+            </div>
         </div>
 
         <div class="seccion">
@@ -271,7 +311,6 @@
 
         <!-- ================================================================
              COLORES DEL TABLERO PÚBLICO (se guardan en MENU!B24:B29)
-             Marca la casilla para usar los colores de fábrica del tablero.
              ================================================================ -->
         <div class="seccion">
             <div class="seccion-titulo">Colores del Tablero Público</div>
@@ -314,8 +353,6 @@
 
     <!-- ================================================================
          ZONA DE RIESGO: REINICIO TOTAL DE LA RIFA
-         Requiere la clave de administrador definida en MENU!B30 y
-         escribir la palabra RESET como doble confirmación.
          ================================================================ -->
     <div class="zona-riesgo">
         <div class="seccion-titulo">⚠️ Zona de Riesgo</div>
@@ -333,6 +370,7 @@
             <li>Borrar <b>todos los compradores</b>: nombres, teléfonos, correos y pagos confirmados.</li>
             <li>Limpiar la configuración: encargado, fecha, valor, medio de pago y alertas.</li>
             <li>Restablecer el título, la descripción y los colores del tablero.</li>
+            <li>Eliminar la fecha y hora de cierre de selección.</li>
         </ul>
         <div class="campo">
             <label>Para continuar, escribe la palabra <b style="color:#ef4444;">RESET</b>:</label>
@@ -355,13 +393,46 @@
 
     const IDS_COLORES = ["colFondo", "colFuenteDescripcion", "colFuenteTitulo", "colFuenteNumeros", "colFuenteNumerosTapados", "colCasillaTapa"];
 
+    // ----------------------------------------------------------------
+    // PILL DE ESTADO DEL CIERRE — se actualiza al escribir en el campo
+    // ----------------------------------------------------------------
+    function actualizarPillCierre() {
+        const val = document.getElementById('cierreSeleccion').value;
+        const pill = document.getElementById('pillCierre');
+        if (!val) {
+            pill.textContent = 'Sin cierre';
+            pill.className = 'pill-cierre pill-inactivo';
+            return;
+        }
+        const ahora = new Date();
+        const cierre = new Date(val);
+        if (ahora >= cierre) {
+            pill.textContent = '🔴 Cerrado';
+            pill.className = 'pill-cierre pill-cerrado';
+        } else {
+            const diff = Math.round((cierre - ahora) / 60000); // minutos
+            let texto = '🟢 Abierto';
+            if (diff < 60) texto += ` — cierra en ${diff} min`;
+            else if (diff < 1440) texto += ` — cierra en ${Math.round(diff/60)} h`;
+            else texto += ` — cierra en ${Math.round(diff/1440)} días`;
+            pill.textContent = texto;
+            pill.className = 'pill-cierre pill-abierto';
+        }
+    }
+
+    document.getElementById('cierreSeleccion').addEventListener('input', actualizarPillCierre);
+    // Actualiza el pill cada minuto mientras el panel esté abierto
+    setInterval(actualizarPillCierre, 60000);
+
     // Habilita o deshabilita los selectores de color según la casilla "por defecto"
     document.getElementById('coloresDefecto').addEventListener('change', function() {
         const usarDefecto = this.checked;
         IDS_COLORES.forEach(id => document.getElementById(id).disabled = usarDefecto);
     });
 
+    // ----------------------------------------------------------------
     // Cargar la configuración actual al iniciar el panel
+    // ----------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
         fetch(`${WEB_APP_URL}?accion=obtener_config`)
         .then(res => res.json())
@@ -379,8 +450,11 @@
             document.getElementById('alerta2').value = data.w2 || 0;
             document.getElementById('alerta3').value = data.y2 || 0;
 
+            // Cierre de selección (MENU!B31): viene como "yyyy-MM-ddTHH:mm" o ""
+            document.getElementById('cierreSeleccion').value = data.cierreSeleccion || '';
+            actualizarPillCierre(); // Muestra el estado del cierre al cargar
+
             // Colores guardados en MENU!B24:B29.
-            // El servidor devuelve "" para cada color en DEFECTO.
             const c = data.colores || {};
             const hayPersonalizados = !!(c.fondo || c.fuenteDescripcion || c.fuenteTitulo || c.fuenteNumeros || c.fuenteNumerosTapados || c.casillaTapa);
 
@@ -398,6 +472,9 @@
         .catch(err => console.error("Error cargando configuración inicial:", err));
     });
 
+    // ----------------------------------------------------------------
+    // Guardar configuración
+    // ----------------------------------------------------------------
     document.getElementById('formConfig').addEventListener('submit', function(e) {
         e.preventDefault();
         const btn = document.getElementById('btnGuardar');
@@ -429,15 +506,15 @@
             unicaParticipacion: document.getElementById('unicaParticipacion').value,
             tituloRifa: document.getElementById('tituloRifa').value,
             descripcionRifa: document.getElementById('descripcionRifa').value,
-            colores: colores
+            colores: colores,
+            // Cierre de selección: se envía vacío para borrar o con fecha-hora para activarlo
+            cierreSeleccion: document.getElementById('cierreSeleccion').value
         };
 
         fetch(WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(datos)
         })
         .then(() => {
@@ -467,7 +544,6 @@
         document.getElementById('modalReset').style.display = 'none';
     }
 
-    // El botón rojo solo se habilita cuando se escribe exactamente RESET
     function validarPalabraReset() {
         const palabra = document.getElementById('palabraReset').value.trim().toUpperCase();
         document.getElementById('btnConfirmarReset').disabled = (palabra !== 'RESET');
@@ -491,7 +567,7 @@
             if (r.status === 'ok') {
                 cerrarModalReset();
                 alert('✅ ' + (r.message || 'Rifa reiniciada correctamente.'));
-                location.reload(); // Recarga el formulario para mostrar la configuración limpia
+                location.reload();
             } else {
                 btn.disabled = false;
                 alert('❌ ' + (r.message || 'No fue posible reiniciar la rifa.'));
